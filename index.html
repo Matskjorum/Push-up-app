@@ -1,1 +1,111 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pushup Logg</title>
 
+<style>
+body{
+    font-family:Arial,sans-serif;
+    max-width:700px;
+    margin:auto;
+    padding:20px;
+    background:#111;
+    color:white;
+}
+h1{text-align:center;}
+input,button{
+    padding:12px;
+    font-size:18px;
+    margin:5px;
+}
+button{
+    cursor:pointer;
+}
+.card{
+    background:#222;
+    padding:15px;
+    border-radius:10px;
+    margin-top:15px;
+}
+.bar{
+    background:#3b82f6;
+    margin:4px 0;
+    color:white;
+    padding:6px;
+    border-radius:4px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>💪 Pushup Logg</h1>
+
+<div class="card">
+<input id="pushups" type="number" placeholder="Antall pushups">
+<button onclick="savePushups()">Lagre</button>
+</div>
+
+<div class="card">
+<h3>Statistikk</h3>
+<p>I dag: <span id="today">0</span></p>
+<p>Totalt: <span id="total">0</span></p>
+<p>Beste dag: <span id="best">0</span></p>
+</div>
+
+<div class="card">
+<h3>Historikk</h3>
+<div id="history"></div>
+</div>
+
+<script>
+
+function getToday(){
+    return new Date().toISOString().split('T')[0];
+}
+
+function loadData(){
+    return JSON.parse(localStorage.getItem("pushupData") || "{}");
+}
+
+function savePushups(){
+
+    const amount = parseInt(document.getElementById("pushups").value);
+
+    if(!amount || amount < 1){
+        alert("Skriv inn antall pushups");
+        return;
+    }
+
+    const data = loadData();
+    const today = getToday();
+
+    data[today] = (data[today] || 0) + amount;
+
+    localStorage.setItem("pushupData", JSON.stringify(data));
+
+    document.getElementById("pushups").value="";
+
+    render();
+}
+
+function render(){
+
+    const data = loadData();
+
+    const today = getToday();
+
+    document.getElementById("today").innerText = data[today] || 0;
+
+    let total = 0;
+    let best = 0;
+
+    Object.values(data).forEach(v=>{
+        total += v;
+        if(v > best) best = v;
+    });
+
+    document.getElementById("total").innerText = total;
+    document.getElementById("best").inne
