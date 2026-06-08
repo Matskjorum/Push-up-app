@@ -4,129 +4,207 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pushup Logg</title>
-
 <style>
-body{
-    font-family:Arial,sans-serif;
-    max-width:700px;
-    margin:auto;
-    padding:20px;
-    background:#111;
-    color:white;
-}
-h1{text-align:center;}
-input,button{
-    padding:12px;
-    font-size:18px;
-    margin:5px;
-}
-button{
-    cursor:pointer;
-}
-.card{
-    background:#222;
-    padding:15px;
-    border-radius:10px;
-    margin-top:15px;
-}
-.bar{
-    background:#3b82f6;
-    margin:4px 0;
-    color:white;
-    padding:6px;
-    border-radius:4px;
-}
+body{font-family:Arial,sans-serif;max-width:760px;margin:auto;padding:18px;background:#0f172a;color:white}
+h1{text-align:center;margin-bottom:5px}
+.sub{text-align:center;color:#94a3b8}
+.card{background:#1e293b;padding:16px;border-radius:14px;margin-top:14px}
+input,button{padding:12px;font-size:18px;border-radius:10px;border:0;margin:4px}
+input{width:160px}
+button{background:#2563eb;color:white;font-weight:bold}
+.quick button{background:#334155}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#0f172a;padding:12px;border-radius:12px;text-align:center}
+.big{font-size:30px;font-weight:bold}
+.label{color:#94a3b8}
+.progress{height:18px;background:#334155;border-radius:20px;overflow:hidden}
+.fill{height:100%;background:#22c55e;width:0%}
+.chart{display:flex;align-items:end;gap:8px;height:180px;border-bottom:1px solid #475569;padding-top:20px;overflow-x:auto}
+.barWrap{text-align:center;min-width:36px}
+.bar{background:#38bdf8;border-radius:8px 8px 0 0;min-height:3px}
+.date{font-size:11px;color:#94a3b8;margin-top:5px}
+.value{font-size:12px}
+.danger{background:#dc2626}
 </style>
 </head>
-
 <body>
 
 <h1>💪 Pushup Logg</h1>
+<div class="sub">v2 · lagring · streak · mål · søylediagram</div>
 
 <div class="card">
-<input id="pushups" type="number" placeholder="Antall pushups">
+<h3>Logg dagens pushups</h3>
+<input id="pushups" type="number" placeholder="Antall">
 <button onclick="savePushups()">Lagre</button>
+<div class="quick">
+<button onclick="quickAdd(10)">+10</button>
+<button onclick="quickAdd(20)">+20</button>
+<button onclick="quickAdd(25)">+25</button>
+<button onclick="quickAdd(50)">+50</button>
+</div>
 </div>
 
 <div class="card">
-<h3>Statistikk</h3>
-<p>I dag: <span id="today">0</span></p>
-<p>Totalt: <span id="total">0</span></p>
-<p>Beste dag: <span id="best">0</span></p>
+<h3>Dagens mål: <span id="goalText">100</span> pushups</h3>
+<div class="progress"><div id="goalFill" class="fill"></div></div>
+<p><span id="goalStatus">0 / 100</span></p>
+</div>
+
+<div class="card stats">
+<div class="stat"><div id="today" class="big">0</div><div class="label">I dag</div></div>
+<div class="stat"><div id="streak" class="big">0</div><div class="label">Dager på rad</div></div>
+<div class="stat"><div id="total" class="big">0</div><div class="label">Totalt</div></div>
+<div class="stat"><div id="best" class="big">0</div><div class="label">Beste dag</div></div>
 </div>
 
 <div class="card">
-<h3>Historikk</h3>
-<div id="history"></div>
+<h3>Søylediagram siste 14 dager</h3>
+<div id="chart" class="chart"></div>
+</div>
+
+<div class="card">
+<button onclick="exportData()">Eksporter data</button>
+<button class="danger" onclick="resetData()">Nullstill</button>
+<p class="sub">Data lagres kun på denne enheten i nettleseren.</p>
 </div>
 
 <script>
+const GOAL = 100;
 
 function getToday(){
-    return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split("T")[0];
 }
 
 function loadData(){
+  try{
     return JSON.parse(localStorage.getItem("pushupData") || "{}");
+  }catch(e){
+    return {};
+  }
+}
+
+function saveData(data){
+  localStorage.setItem("pushupData", JSON.stringify(data));
 }
 
 function savePushups(){
+  const amount = parseInt(document.getElementById("pushups").value,10);
+  if(!amount || amount < 1){
+    alert("Skriv inn antall pushups");
+    return;
+  }
+  addPushups(amount);
+  document.getElementById("pushups").value = "";
+}
 
-    const amount = parseInt(document.getElementById("pushups").value);
+function quickAdd(amount){
+  addPushups(amount);
+}
 
-    if(!amount || amount < 1){
-        alert("Skriv inn antall pushups");
-        return;
+function addPushups(amount){
+  const data = loadData();
+  const today = getToday();
+  data[today] = (data[today] || 0) + amount;
+  saveData(data);
+  render();
+}
+
+function calcStreak(data){
+  let streak = 0;
+  let d = new Date();
+
+  while(true){
+    const key = d.toISOString().split("T")[0];
+    if(data[key] && data[key] > 0){
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }else{
+      break;
     }
+  }
+  return streak;
+}
 
-    const data = loadData();
-    const today = getToday();
+function lastDays(days){
+  const arr = [];
+  const d = new Date();
 
-    data[today] = (data[today] || 0) + amount;
-
-    localStorage.setItem("pushupData", JSON.stringify(data));
-
-    document.getElementById("pushups").value="";
-
-    render();
+  for(let i = days - 1; i >= 0; i--){
+    const x = new Date(d);
+    x.setDate(d.getDate() - i);
+    arr.push(x.toISOString().split("T")[0]);
+  }
+  return arr;
 }
 
 function render(){
+  const data = loadData();
+  const todayKey = getToday();
+  const today = data[todayKey] || 0;
 
-    const data = loadData();
+  let total = 0;
+  let best = 0;
 
-    const today = getToday();
+  Object.values(data).forEach(v=>{
+    total += v;
+    if(v > best) best = v;
+  });
 
-    document.getElementById("today").innerText = data[today] || 0;
+  document.getElementById("today").innerText = today;
+  document.getElementById("total").innerText = total;
+  document.getElementById("best").innerText = best;
+  document.getElementById("streak").innerText = calcStreak(data);
 
-    let total = 0;
-    let best = 0;
+  document.getElementById("goalText").innerText = GOAL;
+  document.getElementById("goalStatus").innerText = today + " / " + GOAL;
+  document.getElementById("goalFill").style.width = Math.min(100, today / GOAL * 100) + "%";
 
-    Object.values(data).forEach(v=>{
-        total += v;
-        if(v > best) best = v;
-    });
+  const chart = document.getElementById("chart");
+  chart.innerHTML = "";
 
-    document.getElementById("total").innerText = total;
-    document.getElementById("best").innerText = best;
+  const days = lastDays(14);
+  const max = Math.max(1, ...days.map(d=>data[d] || 0));
 
-const history = document.getElementById("history");
-history.innerHTML = "";
+  days.forEach(date=>{
+    const value = data[date] || 0;
+    const height = Math.max(3, (value / max) * 150);
 
-Object.entries(data)
-.sort()
-.reverse()
-.forEach(([date,value])=>{
-    const div = document.createElement("div");
-    div.className = "bar";
-    div.innerText = date + " - " + value + " pushups";
-    history.appendChild(div);
-});
+    const wrap = document.createElement("div");
+    wrap.className = "barWrap";
 
+    const val = document.createElement("div");
+    val.className = "value";
+    val.innerText = value;
+
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.style.height = height + "px";
+
+    const label = document.createElement("div");
+    label.className = "date";
+    label.innerText = date.slice(5);
+
+    wrap.appendChild(val);
+    wrap.appendChild(bar);
+    wrap.appendChild(label);
+    chart.appendChild(wrap);
+  });
+}
+
+function exportData(){
+  const data = loadData();
+  const text = JSON.stringify(data, null, 2);
+  prompt("Kopier backup-data:", text);
+}
+
+function resetData(){
+  if(confirm("Er du sikker på at du vil slette all pushup-data?")){
+    localStorage.removeItem("pushupData");
+    render();
+  }
 }
 
 render();
-
 </script>
 
 </body>
