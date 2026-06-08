@@ -108,4 +108,26 @@ function render(){
     });
 
     document.getElementById("total").innerText = total;
-    document.getElementById("best").inne
+    document.getElementById("best").innerText = best;
+
+const history = document.getElementById("history");
+history.innerHTML = "";
+
+Object.entries(data)
+.sort()
+.reverse()
+.forEach(([date,value])=>{
+    const div = document.createElement("div");
+    div.className = "bar";
+    div.innerText = date + " - " + value + " pushups";
+    history.appendChild(div);
+});
+
+}
+
+render();
+
+</script>
+
+</body>
+</html>
