@@ -62,6 +62,10 @@ button{background:#2563eb;color:white;font-weight:bold}
 <h3>Søylediagram siste 14 dager</h3>
 <div id="chart" class="chart"></div>
 </div>
+<div class="card">
+<h3>Dagens økter</h3>
+<div id="sessions"></div>
+</div>
 
 <div class="card">
 <button onclick="exportData()">Eksporter data</button>
@@ -87,7 +91,14 @@ function loadData(){
 function saveData(data){
   localStorage.setItem("pushupData", JSON.stringify(data));
 }
+function loadSessions(){
+  return JSON.parse(localStorage.getItem("pushupSessions") || "[]");
+}
 
+function saveSessions(sessions){
+  localStorage.setItem("pushupSessions", JSON.stringify(sessions));
+}
+  
 function savePushups(){
   const amount = parseInt(document.getElementById("pushups").value,10);
   if(!amount || amount < 1){
@@ -105,8 +116,21 @@ function quickAdd(amount){
 function addPushups(amount){
   const data = loadData();
   const today = getToday();
+
   data[today] = (data[today] || 0) + amount;
   saveData(data);
+
+  const sessions = loadSessions();
+  const now = new Date();
+
+  sessions.push({
+    date: today,
+    time: now.toLocaleTimeString("no-NO", {hour:"2-digit", minute:"2-digit"}),
+    amount: amount
+  });
+
+  saveSessions(sessions);
+
   render();
 }
 
@@ -219,7 +243,26 @@ function render(){
     wrap.appendChild(label);
     chart.appendChild(wrap);
   });
+const sessionsBox = document.getElementById("sessions");
+sessionsBox.innerHTML = "";
+
+const sessions = loadSessions()
+  .filter(s => s.date === todayKey)
+  .reverse();
+
+if(sessions.length === 0){
+  sessionsBox.innerHTML = "<p class='sub'>Ingen økter logget i dag.</p>";
+}else{
+  sessions.forEach(s=>{
+    const div = document.createElement("div");
+    div.style.padding = "8px";
+    div.style.borderBottom = "1px solid #334155";
+    div.innerText = s.time + "  +" + s.amount + " pushups";
+    sessionsBox.appendChild(div);
+  });
 }
+
+  }
 
 function exportData(){
   const data = loadData();
