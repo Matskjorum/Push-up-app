@@ -53,6 +53,7 @@ button{background:#2563eb;color:white;font-weight:bold}
 <div class="card stats">
 <div class="stat"><div id="today" class="big">0</div><div class="label">I dag</div></div>
 <div class="stat"><div id="streak" class="big">0</div><div class="label">Dager på rad</div></div>
+<div class="stat"><div id="bestStreak" class="big">0</div><div class="label">Lengste streak</div></div>
 <div class="stat"><div id="total" class="big">0</div><div class="label">Totalt</div></div>
 <div class="stat"><div id="best" class="big">0</div><div class="label">Beste dag</div></div>
 </div>
@@ -110,6 +111,34 @@ function addPushups(amount){
 }
 
 function calcStreak(data){
+  function calcBestStreak(data){
+
+  const dates = Object.keys(data)
+    .filter(d => data[d] > 0)
+    .sort();
+
+  if(dates.length === 0) return 0;
+
+  let best = 1;
+  let current = 1;
+
+  for(let i = 1; i < dates.length; i++){
+
+    const prev = new Date(dates[i-1]);
+    const curr = new Date(dates[i]);
+
+    const diff = (curr - prev) / (1000*60*60*24);
+
+    if(diff === 1){
+      current++;
+      if(current > best) best = current;
+    }else{
+      current = 1;
+    }
+  }
+
+  return best;
+}
   let streak = 0;
   let d = new Date();
 
@@ -154,6 +183,7 @@ function render(){
   document.getElementById("total").innerText = total;
   document.getElementById("best").innerText = best;
   document.getElementById("streak").innerText = calcStreak(data);
+  document.getElementById("bestStreak").innerText = calcBestStreak(data);
 
   document.getElementById("goalText").innerText = GOAL;
   document.getElementById("goalStatus").innerText = today + " / " + GOAL;
